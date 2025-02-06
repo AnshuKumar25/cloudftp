@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Download Files</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <h1>Download Files</h1>
+    <table>
+        <thead>
+            <tr>
+                <th>File Name</th>
+                <th>Size (bytes)</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody id="file-list">
+            <!-- File rows will be populated dynamically -->
+        </tbody>
+    </table>
+    <button id="refresh-button" onclick="refreshFileList()">Refresh File List</button>
+    <button onclick="window.location.href='/'">Return to Home</button>
+
+    <script>
+        // Fetch file list and populate the table
+        function refreshFileList() {
+            fetch('/files')
+                .then(response => response.json())
+                .then(files => {
+                    const tableBody = document.getElementById('file-list');
+                    tableBody.innerHTML = ''; // Clear existing rows
+
+                    if (files.length === 0) {
+                        // Show message if no files are available
+                        const row = document.createElement('tr');
+                        row.innerHTML = '<td colspan="3">No files available for download</td>';
+                        tableBody.appendChild(row);
+                    } else {
+                        // Populate table with the latest file list
+                        files.forEach(file => {
+                            const row = document.createElement('tr');
+                            row.innerHTML = `
+                                <td>${file.name}</td>
+                                <td>${file.size}</td>
+                                <td>
+                                    <button onclick="downloadFile('${file.name}')">Download</button>
+                                </td>
+                            `;
+                            tableBody.appendChild(row);
+                        });
+                    }
+                })
+                .catch(err => {
+                    console.error('Error fetching file list:', err);
+                });
+        }
+
+        // Trigger file download and log success
+        function downloadFile(filename) {
+            const downloadUrl = `/download/${filename}`;
+            const a = document.createElement('a');
+            a.href = downloadUrl;
+            a.download = filename;
+            a.click();
+
+            // Log the download success (optional)
+            fetch(`/download-success/${filename}`, { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.message) {
+                        alert(`Download Successful: ${filename}`);
+                    }
+                })
+                .catch(err => {
+                    console.error('Error logging download:', err);
+                });
+        }
+
+        // Automatically refresh the file list on page load
+        refreshFileList();
+    </script>
+</body>
+</html>

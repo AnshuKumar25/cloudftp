@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Download Log</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            console.log("Flash message script loaded");  // Debugging line
+    
+            // Ensure flash messages exist before fading
+            if ($(".alert").length > 0) {
+                console.log("Flash messages found:", $(".alert").length);
+    
+                setTimeout(function() {
+                    $(".alert").fadeOut(1000, function() {  // Fade out in 1 sec
+                        $(this).remove(); // Remove from DOM
+                        console.log("Flash message faded out");  // Debugging line
+                    });
+                }, 3000); // Wait for 3 seconds before fading out
+            } else {
+                console.log("No flash messages found");  // Debugging line
+            }
+        });
+    </script>
+</head>
+<body>
+    <h1>Download Log</h1>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+        <thead>
+            <tr>
+                <th>File Name</th>
+                <th>Date</th>
+                <th>Time</th>
+            </tr>
+        </thead>
+        <tbody id="log-table">
+            <!-- Log rows will be populated dynamically -->
+        </tbody>
+    </table>
+    <button onclick="window.location.href='/'">Return to Home</button>
+
+    <script>
+        // Fetch and display the download log
+        function fetchDownloadLog() {
+            fetch('/download-log')
+                .then(response => response.json())
+                .then(logs => {
+                    const tableBody = document.getElementById('log-table');
+                    tableBody.innerHTML = ''; // Clear any existing rows
+
+                    logs.forEach(log => {
+                        const [date, time] = log.timestamp.split(' '); // Split timestamp
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${log.filename}</td>
+                            <td>${date}</td>
+                            <td>${time}</td>
+                        `;
+                        tableBody.appendChild(row);
+                    });
+                })
+                .catch(err => {
+                    console.error('Error fetching log:', err);
+                });
+        }
+
+        // Fetch the log on page load
+        fetchDownloadLog();
+    </script>
+</body>
+</html>

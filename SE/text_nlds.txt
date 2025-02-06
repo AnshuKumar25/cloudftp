@@ -1,0 +1,219 @@
+#js
+const h = 600;
+const w = 600;
+const bias = 20;
+const nodes = 366;
+let begin = null;
+let end = null;
+let coordinates = []
+let shortest = null;
+adj = Array.from({ length: nodes }, () => Array(nodes).fill(0));
+
+class PriorityQueue {
+    constructor() {
+        this.elements = [];
+    }
+
+    isEmpty() {
+        return this.elements.length === 0;
+    }
+
+    enqueue(element, priority) {
+        this.elements.push({ element, priority });
+        this.elements.sort((a, b) => a.priority - b.priority); // Sort by priority (distance)
+    }
+
+    dequeue() {
+        return this.elements.shift().element; // Get the element with the smallest priority
+    }
+}
+
+function dijkstra(adjacencyMatrix, startNode, endNode) {
+    const numNodes = adjacencyMatrix.length;
+
+    // Distance array to track the minimum distance to each node
+    const distances = Array(numNodes).fill(Infinity);
+    distances[startNode] = 0; // Distance to start node is 0
+
+    // Previous array to reconstruct the shortest path
+    const previous = Array(numNodes).fill(null);
+
+    // Priority queue to process nodes by their distance
+    const pq = new PriorityQueue();
+    pq.enqueue(startNode, 0);
+
+    // Set of visited nodes
+    const visited = new Set();
+
+    while (!pq.isEmpty()) {
+        const currentNode = pq.dequeue();
+
+        // Skip this node if it has already been visited
+        if (visited.has(currentNode)) continue;
+        visited.add(currentNode);
+
+        // If we reached the end node, reconstruct the path
+        if (currentNode === endNode) {
+            return reconstructPath(previous, startNode, endNode);
+        }
+
+        // Explore the neighbors of the current node
+        for (let neighbor = 0; neighbor < numNodes; neighbor++) {
+            const distanceToNeighbor = adjacencyMatrix[currentNode][neighbor];
+
+            // If there is no edge between currentNode and neighbor, skip
+            if (distanceToNeighbor === 0 || distanceToNeighbor === Infinity) continue;
+
+            // Calculate the new distance to the neighbor
+            const newDistance = distances[currentNode] + distanceToNeighbor;
+
+            // If the new distance is shorter, update the distance and the path
+            if (newDistance < distances[neighbor]) {
+                distances[neighbor] = newDistance;
+                previous[neighbor] = currentNode;
+                pq.enqueue(neighbor, newDistance);
+            }
+        }
+    }
+
+    // Return null if no path is found
+    return null;
+}
+
+function reconstructPath(previous, startNode, endNode) {
+    let path = [];
+    let currentNode = endNode;
+
+    while (currentNode !== null) {
+        path.push(currentNode);
+        currentNode = previous[currentNode];
+    }
+
+    path.reverse(); // Reverse the path to get it from start to target
+    if (path[0] === startNode) {
+        return path; // If the path is valid, return it
+    } else {
+        return []; // Return an empty array if no path is found
+    }
+}
+
+
+function findp(inputPoint, n) {
+    // Destructure the input point into x and y
+    const [x1, y1] = inputPoint;
+
+    // Calculate distances and sort the coordinates
+    const sortedCoordinates = coordinates
+        .map(coord => {
+            const [x2, y2] = coord;
+            // Calculate Euclidean distance
+            const distance = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+            return { coord, distance };
+        })
+        // Sort by distance
+        .sort((a, b) => a.distance - b.distance)
+        // Map back to only the coordinates
+        .map(item => item.coord);
+
+    // Return the top n closest coordinates
+    return sortedCoordinates.slice(0, n);
+}
+
+
+function create(n){
+  stroke(2);
+  strokeWeight(5);
+  for(let i = 0; i < n; i++){
+    x = int(random(bias, w-bias));
+    y = int(random(bias, h-bias));
+    coordinates.push([x,y]);
+    point(x, y);
+  }
+}
+
+function path(n, c, w){
+  strokeWeight(w);
+  for(let x = 0; x < coordinates.length; x++){
+    closest = findp(coordinates[x], n);
+    stroke(c);
+    for(let i=0;i < n;i++){
+      let index = coordinates.findIndex(innerArray => JSON.stringify(innerArray) === JSON.stringify(closest[i]));
+      adj[x][index] = 1;
+      adj[index][x] = 1;
+      line(coordinates[x][0], coordinates[x][1], closest[i][0], closest[i][1]);
+    }
+  }
+}
+
+function track(arr){
+  strokeWeight(5);
+  stroke('black')
+  for(let i=0; i<arr.length -1; i++){
+    line(coordinates[arr[i]][0], coordinates[arr[i]][1], coordinates[arr[i+1]][0], coordinates[arr[i+1]][1]);
+  } 
+}
+
+function mouseClicked(){
+  if (begin==null && end==null){
+    begin = findp([mouseX, mouseY], 1);
+  }else if(begin!=null && end==null){
+    end = findp([mouseX, mouseY], 1);
+    indexB = fidx(begin[0]);
+    indexE = fidx(end[0]);
+    shortest = dijkstra(adj, indexB, indexE);
+    if (shortest!=null){
+      path(4, 'darkgreen', 45);
+      track(shortest);
+    }else{
+      console.log("NO POSSIBLE PATH");
+    }
+  } else{
+    end = null;
+    begin = findp([mouseX, mouseY], 1);
+  }  
+}
+
+function fidx(arr){
+  for(let i=0;i<nodes;i++){
+    if (coordinates[i][0]==arr[0] && coordinates[i][1]==arr[1]){
+      return i;
+    }
+  }
+  return -1;
+}
+
+function setup() {
+  createCanvas(h, w);
+  background('lightblue');
+  create(nodes);
+  path(4, 'darkgreen', 45);
+  path(4, 'magenta', 2);
+  //console.log(adj);
+}
+
+function draw() {
+}
+
+
+
+
+
+
+
+#html file
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.10.0/p5.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.2.0/p5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.10.0/addons/p5.sound.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="style.css">
+    <meta charset="utf-8" />
+
+  </head>
+  <body>
+    <main>
+    </main>
+    <script src="sketch.js"></script>
+  </body>
+</html>
